@@ -1,0 +1,28 @@
+deployment:
+  replicaCount: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  envs:
+    GRAFANA_URL: https://grafana.dev.enigmagroup.tech/
+    KEYCLOAK_URL: https://keycloak-dev.enigmagroup.tech
+    LOG_LEVEL: info
+    ROLES_REGEX_RO: -ro
+    ROLES_REGEX_RW: -rw
+    KEYCLOAK_MONITOR_INTERVAL: 1m
+    GRAFANA_MONITOR_INTERVAL: 1m
+    SYNC_INTERVAL: 1m
+  vaultSecretEnvs:
+    - GRAFANA_PASSWORD
+    - GRAFANA_USER
+    - KEYCLOAK_CLIENT_NAME
+    - KEYCLOAK_CLIENT_SECRET
+    - KEYCLOAK_MASTER_CLIENT_NAME
+    - KEYCLOAK_MASTER_CLIENT_SECRET
+    - KEYCLOAK_PASSWORD
+    - KEYCLOAK_REALM
+    - KEYCLOAK_USER

@@ -1,0 +1,3 @@
+include:
+  - project: 'devops/ci-cd/gitlab-ci-template'
+    file: '/backend-common.yml'
