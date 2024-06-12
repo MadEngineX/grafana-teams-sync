@@ -56,7 +56,70 @@ func (k *Keycloak) GetUsersInRole(roleName string) ([]User, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest("GET", k.URL.String()+"/admin/realms/enigma/clients/"+clientID+"/roles/"+roleName+"/users", nil)
+	req, err := http.NewRequest("GET", k.URL.String()+"/admin/realms/"+k.Realm+"/clients/"+clientID+"/roles/"+roleName+"/users", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := k.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var users []User
+
+	err = json.Unmarshal(body, &users)
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
+
+}
+
+func (k *Keycloak) GetGroupsInRole(roleName string) ([]Group, error) {
+
+	clientID, err := k.GetClientID()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", k.URL.String()+"/admin/realms/"+k.Realm+"/clients/"+clientID+"/roles/"+roleName+"/groups", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := k.Client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []Group
+
+	err = json.Unmarshal(body, &groups)
+	if err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+
+}
+
+func (k *Keycloak) GetUsersInGroup(groupID string) ([]User, error) {
+
+	req, err := http.NewRequest("GET", k.URL.String()+"/admin/realms/"+k.Realm+"/groups/"+groupID+"/members", nil)
 	if err != nil {
 		return nil, err
 	}

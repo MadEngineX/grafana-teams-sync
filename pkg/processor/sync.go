@@ -178,6 +178,7 @@ func (s *SyncProcessor) syncTeamsPermissions(keycloakCache, grafanaCache CommonC
 	} else {
 		keycloakRoles = keycloakCache.KeycloakState.RolesRW
 	}
+OUTER:
 	for _, role := range keycloakRoles {
 
 		log.WithField("loggerID", loggerID).Debugf("Syncing role: %s to Grafana TeamsPermissions", role.Role.Name)
@@ -211,7 +212,24 @@ func (s *SyncProcessor) syncTeamsPermissions(keycloakCache, grafanaCache CommonC
 
 		permissions.Items = append(permissions.Items, &item)
 
-		err := s.GrafanaClient.Client.UpdateFolderPermissions(folderUID, &permissions)
+		currentPermissions, err := s.GrafanaClient.Client.FolderPermissions(folderUID)
+		if err != nil {
+			return fmt.Errorf("unable to s.GrafanaClient.Client.FolderPermissions: %s", err.Error())
+		}
+
+		for _, currentPermission := range currentPermissions {
+			if currentPermission.TeamID == item.TeamID && currentPermission.Permission == item.Permission {
+				continue OUTER
+
+			} else {
+				permissions.Items = append(permissions.Items, &gapi.PermissionItem{
+					TeamID:     currentPermission.TeamID,
+					Permission: currentPermission.Permission,
+				})
+			}
+		}
+
+		err = s.GrafanaClient.Client.UpdateFolderPermissions(folderUID, &permissions)
 		if err != nil {
 			return fmt.Errorf("unable to s.GrafanaClient.Client.UpdateFolderPermissions: %s", err.Error())
 		}
@@ -247,7 +265,7 @@ func (s *SyncProcessor) syncUsersToTeams(keycloakCache, grafanaCache CommonCache
 						continue
 					}
 
-					log.WithField("loggerID", loggerID).Debugf("Addind Member to Grafana Team: Team %s, User %s,", teamName, grafanaUser.Login)
+					log.WithField("loggerID", loggerID).Debugf("Adding Member to Grafana Team: Team %s, User %s,", teamName, grafanaUser.Login)
 					err := s.GrafanaClient.Client.AddTeamMember(teamID, grafanaUser.ID)
 					if err != nil {
 						return fmt.Errorf("unable to s.GrafanaClient.Client.AddTeamMember: %s", err.Error())

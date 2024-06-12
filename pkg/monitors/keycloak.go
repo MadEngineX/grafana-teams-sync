@@ -35,6 +35,30 @@ func MonitorKeycloakRoles(shutdownCh chan struct{}, wg *sync.WaitGroup, kk *keyc
 
 				for _, role := range keycloakRoles {
 
+					groupsInRole, err := kk.GetGroupsInRole(role.Name)
+					if err != nil {
+						log.WithField("loggerID", loggerID).Errorf("Unable to GetGroupsInRole: %s", err.Error())
+					}
+					for _, group := range groupsInRole {
+						usersInRole, err := kk.GetUsersInGroup(group.ID)
+						if err != nil {
+							log.WithField("loggerID", loggerID).Errorf("Unable to GetUsersInGroup: %s", err.Error())
+						}
+
+						cacheRole := keycloak.CacheRole{
+							Role:  role,
+							Users: usersInRole,
+						}
+
+						if roleRegexp == kk.Cfg.RolesRegexRO {
+							log.WithField("loggerID", loggerID).Debugf("MonitorKeycloakRoles: adding RO role: %s", role.Name)
+							cache.KeycloakState.RolesRO = append(cache.KeycloakState.RolesRO, cacheRole)
+						} else {
+							log.WithField("loggerID", loggerID).Debugf("MonitorKeycloakRoles: adding keycloak RW role: %s", role.Name)
+							cache.KeycloakState.RolesRW = append(cache.KeycloakState.RolesRW, cacheRole)
+						}
+					}
+
 					usersInRole, err := kk.GetUsersInRole(role.Name)
 					if err != nil {
 						log.WithField("loggerID", loggerID).Errorf("Unable to GetUsersInRole: %s", err.Error())
